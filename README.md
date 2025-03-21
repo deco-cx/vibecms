@@ -34,7 +34,11 @@ export const MyComponent: Component = ({ title, description }) => {
 };
 ```
 
-Each section of a webpage is a standalone TSX component with clearly defined props, promoting maintainability and rapid development.
+Each section of a webpage is a standalone TSX component with clearly defined props, promoting maintainability and rapid development. The type definitions automatically generate appropriate content editing interfaces, eliminating the need to manually configure content type editors.
+
+#### Server-Side Rendering with Client-Side Interactivity
+
+Components in Vibe CMS run on the server-side by default, ensuring fast loading times and excellent SEO. For interactive elements, Vibe CMS supports client-side islands of interactivity, similar to modern frameworks like Fresh.
 
 ### Enable inline content editing for your users anywhere
 
@@ -46,6 +50,10 @@ Seamless inline editing happens directly in the browser—no external tools or c
 
 Inline forms pop-up for advanced meta-configuration (e.g., layouts, data sources, dynamic properties), making it easy for non-technical users to customize their content.
 
+#### From Code to Collaborative Content
+
+Dealing with "content type" editors is a headache. With Vibe CMS, you simply write React (JSX) components with TypeScript, and we automatically generate a no-code editor that matches your Props. This creates a perfect bridge between developers and content creators, allowing them to work together seamlessly in a unified environment.
+
 ### Section Library & Theming
 
 Create your own Rich library of customizable TSX sections ready for immediate use by agents and humans.
@@ -53,6 +61,14 @@ Create your own Rich library of customizable TSX sections ready for immediate us
 Supports customizable themes built with Tailwind CSS, ensuring rapid styling and consistent branding.
 
 Enables agents like Lovable and Bolt.new to easily auto-generate landing pages that remain brand-consistent and easily editable across multiple pages.
+
+#### Component Library Architecture
+
+The Section Library in Vibe CMS works similarly to Storybook, allowing developers to:
+- Configure component properties and instantly see the generated UI
+- Preview components in isolation before adding them to pages
+- Create composable components that can accept other sections as parameters
+- Build a cohesive design system that maintains brand consistency
 
 ### Static & Dynamic Rendering with Cloudflare Workers
 
@@ -82,22 +98,47 @@ Easy-to-extend architecture, allowing the community and agent developers to buil
 
 ## Technical Stack
 
-TypeScript / TSX: Provides type safety, developer productivity, and clarity.
+**Core Technologies:**
+- **TypeScript / TSX:** Provides type safety, developer productivity, and clarity
+- **HTMX & Deno:** Efficient server-side rendering with minimal client-side overhead
+- **Tailwind CSS & DaisyUI:** Immediate and highly customizable styling solutions
+- **Cloudflare Workers:** Edge-rendered dynamic components for low latency
 
-HTMX & Deno (optional runtime for advanced scenarios): Efficient server-side rendering and minimal client-side overhead.
+**Development Experience:**
+- Local or web-based code editor with real-time content preview
+- Automatic TypeScript to Content Schema conversion
+- Git-based version control with easy rollback capabilities
+- AI-assisted code and content generation
 
-Tailwind CSS & DaisyUI: Immediate and highly customizable styling solutions.
-
-Cloudflare Workers: Edge-rendered dynamic components for low latency.
+**Performance Optimizations:**
+- Server-side rendering for fast initial page loads
+- Minimal JavaScript footprint for better performance
+- Edge computing for dynamic content with low latency
+- Optimized asset delivery through CDN
 
 ## Ideal Use-Cases
 
-AI-generated, brand-consistent landing pages (e.g., Lovable-style agents).
+**AI-Driven Web Development:**
+- AI-generated, brand-consistent landing pages (e.g., Lovable-style agents)
+- Rapid prototyping and iteration with AI assistance
+- Embedding directly into agent chat flows for seamless, agent-driven site creation
 
-Simple, high-performance, editable content sites.
+**Content-Driven Sites:**
+- Simple, high-performance, editable content sites
+- Marketing landing pages with easy content management
+- Documentation sites with collaborative editing
 
-Rapid experimentation and MVP launches powered by AI Agents.
+**Collaborative Workflows:**
+- Bridge the gap between developers and content creators
+- Enable non-technical users to make content changes without developer intervention
+- Maintain brand consistency across multiple pages and sites
 
-Embedding directly into agent chat flows for seamless, agent-driven site creation and editing experiences.
+## Community & Learning
 
+- Join our [Discord community](https://deco.cx/discord)
+- Contribute to the [GitHub repository](https://github.com/deco-cx/vibecms)
 
+## Get Started Today
+
+- Connect your agent to our [MCP Server](https://mcp.vibecms.ai)
+- [Quick Start Guide](https://docs.vibecms.ai/getting-started)
