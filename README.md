@@ -1,16 +1,37 @@
-# VibeFlare MCP Server 🚀
+# VibeFlare MCP-First CMS 🚀
 
 **Agent-controlled CMS powered by Cloudflare Workers and the Model Context Protocol (MCP)**
 
-VibeFlare is a Cloudflare-native CMS that exposes an MCP-compatible API, allowing AI agents to create, edit, and manage web content, data, and assets without human DevOps intervention.
+VibeFlare is a Cloudflare-native CMS that exposes a **single MCP endpoint** (`GET /mcp`) which provides AI agents with complete instructions on how to create, edit, and manage web content, data, and assets. Think of it as "Lovable's edit flow meets raw Cloudflare power via MCP."
+
+## 🧠 What is "MCP-First"?
+
+Unlike traditional CMSs with dozens of REST endpoints, VibeFlare follows the **Model Context Protocol** philosophy:
+
+1. **One endpoint to rule them all**: `GET /mcp` returns plain-text instructions
+2. **Agent reads instructions**: Claude, deco.chat, or any MCP client learns your system
+3. **Agent performs real work**: Calls the helper endpoints described in the instructions
+4. **Zero API documentation needed**: The MCP response IS the documentation
+
+```
+Agent: "Create a blog post about AI"
+  ↓
+GET /mcp (reads instructions)
+  ↓  
+POST /api/page/blog/ai-post (creates content)
+  ↓
+POST /api/sql (adds to database)
+  ↓
+Done! ✨
+```
 
 ## ✨ Features
 
-- **🤖 MCP-Compatible API** - Full Model Context Protocol support for agent interaction
-- **⚡ Cloudflare-Native** - Built on Workers, KV, D1, and R2 for global edge performance  
+- **🤖 True MCP Protocol** - Single instruction endpoint, not fake REST APIs
+- **⚡ Cloudflare-Native** - Workers + KV + D1 + R2 for global edge performance
 - **✏️ Inline Editing** - Add `?edit` to any URL for instant WYSIWYG editing
-- **🎨 Theme System** - CSS variables and runtime theme swapping
-- **📦 Zero Build** - Deploy directly with TypeScript, no complex build pipeline
+- **🎨 Theme System** - CSS variables for consistent styling
+- **📦 Zero Build** - Deploy directly with TypeScript, no complex pipeline
 - **🔗 SSR Ready** - Server-side rendering with `mono-jsx`
 
 ## 🚀 Quick Start
@@ -19,34 +40,26 @@ VibeFlare is a Cloudflare-native CMS that exposes an MCP-compatible API, allowin
 
 ```bash
 npm install mono-jsx wrangler
-# or
-yarn add mono-jsx wrangler
 ```
 
 ### 2. Set Up Cloudflare Resources
 
-Create the required Cloudflare resources:
-
 ```bash
-# Create KV namespace
+# Create KV namespace for pages
 wrangler kv:namespace create "CONTENT"
 
-# Create D1 database  
+# Create D1 database for structured data
 wrangler d1 create vibeflare
 
-# Create R2 bucket
+# Create R2 bucket for assets
 wrangler r2 bucket create your-bucket-name
 ```
 
-### 3. Configure wrangler.toml
+### 3. Update wrangler.toml
 
-Update `wrangler.toml` with your actual resource IDs:
+Replace the placeholder IDs with your actual resource IDs:
 
 ```toml
-name = "vibeflare-mcp-server"
-main = "index.ts"
-compatibility_date = "2024-01-01"
-
 kv_namespaces = [
   { binding = "CONTENT", id = "YOUR_ACTUAL_KV_ID" }
 ]
@@ -66,146 +79,83 @@ r2_buckets = [
 wrangler publish
 ```
 
-### 5. Start Creating
+### 5. Start Using
 
-Visit `https://your-worker.workers.dev/?edit` and start typing!
+Visit `https://your-worker.workers.dev/mcp` to see the MCP instructions, or add `?edit` to any page URL for inline editing!
 
-## 📡 MCP API Reference
+## 📡 How MCP Works
 
-VibeFlare exposes a complete MCP-compatible API for programmatic content management:
+The magic happens at `/mcp` which returns instructions like this:
 
-### Pages
+```
+# VibeFlare CMS Instructions
 
-```bash
-# List all pages
-GET /mcp/pages
-# Response: {"pages": ["home", "about", "contact"]}
+## Content Management
+- Pages stored in KV with key pattern: `page:{slug}`
+- Create/update via: POST /api/page/{slug} with {content: "html"}
+- Enable editing by adding ?edit to any URL
 
-# Get page content
-GET /mcp/page/:slug
-# Response: {"slug": "about", "content": "<h1>About</h1>..."}
+## Structured Data  
+- Database tables in D1: posts, settings, users
+- Execute SQL via: POST /api/sql with {sql: "SELECT * FROM posts"}
 
-# Create/update page
-POST /mcp/page/:slug
-Content-Type: application/json
-{"content": "<h1>New Page</h1><p>Content here</p>"}
-# Response: {"success": true, "slug": "about"}
+## Assets
+- Binary files in R2 bucket
+- Upload via: POST /api/upload/{key} with binary body
+- Access at: GET /assets/{key}
+
+## Examples
+- Create homepage: POST /api/page/home {"content": "<h1>Welcome</h1>"}
+- Add blog post: POST /api/sql {"sql": "INSERT INTO posts (title, slug) VALUES ('Hello', 'hello')"}
+- Upload image: POST /api/upload/hero.jpg [binary data]
 ```
 
-### Data (D1 Database)
+Any MCP-capable agent reads these instructions and knows exactly how to operate your CMS!
 
-```bash
-# Query table data
-GET /mcp/data/:table
-# Response: {"results": [...], "success": true}
+## ✏️ Inline Editing
 
-# Insert data
-POST /mcp/data/:table  
-Content-Type: application/json
-{"title": "Post Title", "content": "Post content", "author": "Agent"}
-# Response: {"success": true, "result": {...}}
-```
-
-### Assets (R2 Storage)
-
-```bash
-# Upload file
-POST /mcp/upload/:key
-Content-Type: image/jpeg
-[binary data]
-# Response: {"success": true, "key": "photo.jpg"}
-
-# Download file
-GET /mcp/upload/:key
-# Response: [binary data with correct Content-Type]
-```
-
-## 🎨 Theme System
-
-Colors and styling are controlled via `theme.json` and CSS variables:
-
-```javascript
-// theme.json defines design tokens
-{
-  "colors": {
-    "primary": "#3b82f6",
-    "background": "#ffffff",
-    // ...
-  }
-}
-
-// Automatically converted to CSS variables:
-// --color-primary: #3b82f6
-// --color-background: #ffffff
-```
-
-You can swap themes at runtime by updating the CSS variables.
-
-## ✏️ Edit Mode
-
-Add `?edit` to any URL to enable inline editing:
+Add `?edit` to any URL to enable WYSIWYG editing:
 
 - `/?edit` - Edit homepage
-- `/about?edit` - Edit about page  
-- `/blog/post-1?edit` - Edit blog post
+- `/about?edit` - Edit about page
+- `/blog/my-post?edit` - Edit blog post
 
 The editor provides:
 - **ContentEditable** regions with visual feedback
-- **Save button** in top-right corner
-- **Auto-save** to KV storage via `/api/save/:slug`
+- **Save button** that POSTs to `/api/page/:slug`
+- **Auto-save** to prevent data loss
 
-## 🧠 Agent Integration Examples
+## 🎨 Styling
 
-### Using cURL
+VibeFlare uses CSS variables for theming:
 
-```bash
-# Create a new blog post
-curl -X POST https://your-worker.workers.dev/mcp/page/blog/hello-world \
-  -H "Content-Type: application/json" \
-  -d '{"content": "<h1>Hello World</h1><p>My first post!</p>"}'
-
-# Add some data
-curl -X POST https://your-worker.workers.dev/mcp/data/posts \
-  -H "Content-Type: application/json" \
-  -d '{"title": "Hello World", "slug": "hello-world", "published": true}'
-
-# Upload an image
-curl -X POST https://your-worker.workers.dev/mcp/upload/hero.jpg \
-  -H "Content-Type: image/jpeg" \
-  --data-binary @hero.jpg
+```css
+:root {
+  --color-primary: #3b82f6;
+  --color-background: #ffffff;
+  --color-text: #1f2937;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+}
 ```
 
-### Agent Prompt Examples
-
-```
-Create a landing page for a SaaS product with:
-- Hero section with CTA
-- Features grid
-- Pricing table
-- Contact form
-
-Use the VibeFlare MCP API to:
-1. POST /mcp/page/landing with the HTML content
-2. POST /mcp/data/signups to create the leads table
-3. Style with the existing theme variables
-```
+Agents can update styles by modifying the CSS stored in KV under the `styles` key.
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────┐    ┌─────────────┐
-│   AI Agent      │───▶│ MCP API      │───▶│ Cloudflare  │
-│   (Claude, etc) │    │ /mcp/*       │    │ Workers     │
+│   AI Agent      │───▶│ GET /mcp     │───▶│ Cloudflare  │
+│   (Claude, etc) │    │ (instructions)    │ Workers     │
 └─────────────────┘    └──────────────┘    └─────────────┘
                                                    │
                        ┌─────────────┐             │
-                       │ Edit Mode   │◀────────────┤
-                       │ ?edit       │             │
+                       │ Helper APIs │◀────────────┤
+                       │ /api/*      │             │
                        └─────────────┘             │
                                                    │
                        ┌─────────────┐             │
                        │ SSR Pages   │◀────────────┤  
-                       │ mono-jsx    │             │
+                       │ ?edit mode  │             │
                        └─────────────┘             │
                                                    ▼
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
@@ -216,45 +166,40 @@ Use the VibeFlare MCP API to:
 
 ## 🔒 Security Notes
 
-This implementation focuses on core functionality. For production use, consider adding:
+This MVP focuses on core MCP functionality. For production, add:
 
-- **Authentication** - Cloudflare Access, API keys, or JWT tokens
-- **Rate limiting** - Cloudflare rate limiting rules
-- **Input validation** - Sanitize HTML content and SQL queries
-- **CORS configuration** - Restrict origins for browser requests
+- **Authentication** - Cloudflare Access or API keys
+- **Rate limiting** - Cloudflare rate limiting rules  
+- **Input validation** - Sanitize HTML and SQL
+- **CORS configuration** - Restrict origins
 
 ```javascript
-// Example: Add auth middleware
-if (!request.headers.get('Authorization')) {
-  return new Response('Unauthorized', { status: 401 });
-}
+// TODO: Add auth middleware here
+// if (!request.headers.get('Authorization')) {
+//   return new Response('Unauthorized', { status: 401 });
+// }
 ```
 
 ## 🚧 Next Steps
 
 Ready to extend VibeFlare? Consider adding:
 
+- **Authentication** with Cloudflare Access integration
+- **Multi-tenancy** with namespace isolation per user
+- **Caching strategies** using KV TTL and Cache API
+- **Webhooks** for external system notifications
 - **React hydration** for interactive components
-- **Markdown support** with frontmatter parsing
 - **Image optimization** via Cloudflare Images
-- **Caching strategies** with KV TTL and Cache API
-- **Webhooks** for external integrations
-- **Multi-tenancy** with namespace isolation
+- **Markdown support** with frontmatter parsing
+- **Version control** for content history
+- **Backup/restore** functionality
+- **Template system** for reusable layouts
 
-## 📖 Learning Resources
+## 📖 Resources
 
 - [Model Context Protocol Spec](https://spec.modelcontextprotocol.io/)
-- [Cloudflare Workers Docs](https://developers.cloudflare.com/workers/)
-- [mono-jsx Documentation](https://github.com/trueadm/mono-jsx)
-
-## 🤝 Contributing
-
-VibeFlare is designed to be extended by the community. Feel free to:
-
-- Add new MCP endpoints
-- Improve the theme system  
-- Enhance the editor experience
-- Build agent integrations
+- [Cloudflare Workers](https://developers.cloudflare.com/workers/)
+- [mono-jsx](https://github.com/trueadm/mono-jsx)
 
 ---
 

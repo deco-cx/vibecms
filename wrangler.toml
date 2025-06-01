@@ -1,23 +1,24 @@
-name = "vibeflare-mcp-server"
-main = "index.tsx"
-compatibility_date = "2024-01-15"
-compatibility_flags = ["nodejs_compat"]
+name = "vibeflare-mcp-cms"
+main = "index.ts"
+compatibility_date = "2024-01-01"
 
-# Replace the IDs below with your actual Cloudflare resource IDs
-[env.production]
+# Replace these placeholder IDs with your actual Cloudflare resource IDs
+# Run: wrangler kv:namespace create "CONTENT" to get KV ID
+# Run: wrangler d1 create vibeflare to get D1 ID  
+# Run: wrangler r2 bucket create your-bucket-name to get R2 bucket
+
 kv_namespaces = [
-  { binding = "CONTENT", id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID" }
+  { binding = "CONTENT", id = "REPLACE_ME_WITH_KV_ID" }
 ]
 
-[[env.production.d1_databases]]
-binding = "DB"
-database_name = "vibeflare"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+d1_databases = [
+  { binding = "DB", database_name = "vibeflare", database_id = "REPLACE_ME_WITH_D1_ID" }
+]
 
-[[env.production.r2_buckets]]
-binding = "BUCKET"
-bucket_name = "REPLACE_WITH_YOUR_R2_BUCKET_NAME"
+r2_buckets = [
+  { binding = "BUCKET", bucket_name = "REPLACE_ME_WITH_BUCKET_NAME" }
+]
 
-# Environment variables (optional)
-[vars]
-# ADMIN_SECRET = "your-secret-key" 
+# TODO: Add Cloudflare Access authentication for production
+# [env.production.vars]
+# AUTH_DOMAIN = "your-team.cloudflareaccess.com" 

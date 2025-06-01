@@ -1,23 +1,30 @@
 {
-  "name": "vibeflare-mcp-server",
+  "name": "vibeflare-mcp-cms",
   "version": "1.0.0",
-  "description": "MCP-compatible Cloudflare Worker CMS powered by agents",
-  "main": "index.tsx",
+  "description": "MCP-first CMS powered by Cloudflare Workers",
+  "main": "index.ts",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler publish",
-    "types": "wrangler types"
+    "build": "tsc --noEmit"
   },
   "dependencies": {
-    "mono-jsx": "^0.6.3"
+    "mono-jsx": "^1.0.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20231218.0",
+    "@cloudflare/workers-types": "^4.20241022.0",
     "typescript": "^5.3.0",
-    "wrangler": "^3.22.0"
+    "wrangler": "^3.0.0"
   },
-  "keywords": ["mcp", "cms", "cloudflare", "worker", "agent", "jsx"],
+  "keywords": [
+    "mcp",
+    "cms",
+    "cloudflare",
+    "workers",
+    "ai",
+    "agents"
+  ],
   "author": "VibeFlare",
   "license": "MIT"
 } 

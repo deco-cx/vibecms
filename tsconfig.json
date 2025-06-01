@@ -1,22 +1,35 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "node16",
-    "lib": ["ES2022", "WebWorker"],
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "checkJs": false,
     "jsx": "react-jsx",
     "jsxImportSource": "mono-jsx",
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "outDir": "./dist",
     "strict": true,
-    "esModuleInterop": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "exactOptionalPropertyTypes": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["@cloudflare/workers-types"],
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-    "declaration": false,
-    "outDir": "./dist",
-    "noEmit": true
+    "types": ["@cloudflare/workers-types"]
   },
-  "include": ["*.ts", "*.tsx"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "*.ts",
+    "*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 } 
