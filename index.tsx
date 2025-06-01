@@ -1,3 +1,4 @@
+/// <reference types="@cloudflare/workers-types" />
 /** @jsxImportSource mono-jsx */
 import themeConfig from './theme.json';
 
@@ -130,6 +131,7 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     const isEditMode = url.searchParams.has('edit');
+    const isCodeMode = url.searchParams.has('code');
 
     // Mock env for local development
     if (!env.CONTENT) {
@@ -151,6 +153,56 @@ export default {
           put: async () => {}
         } as any
       };
+    }
+
+    // MCP instruction endpoint - the heart of our agent-first CMS
+    if (path === '/mcp') {
+      const instructions = `# VibeFlare CMS Instructions
+
+You are interacting with a Cloudflare-native CMS. Here's how to operate it:
+
+## Content Management (KV Storage)
+- **Pages stored with pattern**: \`page:{slug}\`
+- **Create/update page**: POST ${url.origin}/mcp/page/{slug}
+  - Body: \`{"content": "<h1>Your HTML content</h1>"}\`
+  - Example: POST ${url.origin}/mcp/page/home with \`{"content": "<h1>Welcome</h1><p>Hello world!</p>"}\`
+
+## Structured Data (D1 Database)  
+- **Available tables**: posts, settings, users, comments
+- **Execute SQL**: POST ${url.origin}/mcp/data/{table}
+  - Body: \`{"title": "Post Title", "content": "Post content"}\`
+  - Query data: GET ${url.origin}/mcp/data/{table}
+
+## Assets (R2 Storage)
+- **Upload file**: POST ${url.origin}/mcp/upload/{key}
+  - Body: Binary file data  
+  - Content-Type: Appropriate MIME type (image/jpeg, text/css, etc.)
+- **Access file**: GET ${url.origin}/mcp/upload/{key}
+
+## Inline Editing
+- **Enable edit mode**: Add \`?edit\` to any page URL
+- **Enable code mode**: Add \`?code\` to any page URL for source editing
+- **Example**: ${url.origin}/about?edit opens content editing
+- **Example**: ${url.origin}/about?code opens Monaco source editor
+
+## Common Tasks
+
+### Create a homepage:
+\`\`\`bash
+POST ${url.origin}/mcp/page/home
+{"content": "<h1>Welcome to My Site</h1><p>This is the homepage content.</p>"}
+\`\`\`
+
+### Query all pages:
+\`\`\`bash
+GET ${url.origin}/mcp/pages
+\`\`\`
+
+Remember: This CMS is designed for agent operation with real-time editing capabilities!`;
+
+      return new Response(instructions, {
+        headers: { 'Content-Type': 'text/plain' }
+      });
     }
 
     // MCP API routes
@@ -176,7 +228,7 @@ export default {
       return new Response('MCP endpoint not found', { status: 404 });
     }
 
-    // Save API for edit mode
+    // Save API for both edit and code modes
     if (path.startsWith('/api/save/')) {
       const slug = path.split('/').slice(3).join('/');
       if (request.method === 'POST') {
@@ -219,7 +271,7 @@ export default {
           position: fixed; top: 0; right: 0; 
           background: var(--color-primary); color: white;
           padding: 0.5rem 1rem; border-radius: 0 0 0 0.5rem;
-          z-index: 1000;
+          z-index: 1000; display: flex; gap: 0.5rem; align-items: center;
         }
         .btn { 
           background: var(--color-primary); color: white;
@@ -227,6 +279,7 @@ export default {
           cursor: pointer; font-size: 0.875rem;
         }
         .btn:hover { opacity: 0.9; }
+        .btn-secondary { background: var(--color-secondary); }
         [contenteditable] { 
           outline: 2px dashed var(--color-primary); 
           outline-offset: 2px;
@@ -247,9 +300,22 @@ export default {
           overflow-x: auto;
           margin: 1rem 0;
         }
+        #monaco-editor {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          z-index: 999;
+          background: #1e1e1e;
+        }
+        .editor-hidden { display: none; }
       `;
 
       const editScript = `
+        let editor = null;
+        let originalContent = '';
+        
         function saveContent() {
           const editableContent = document.querySelector('[contenteditable]');
           const slug = location.pathname === '/' ? 'home' : location.pathname.slice(1);
@@ -261,9 +327,66 @@ export default {
           })
           .then(r => r.json())
           .then(data => {
-            alert(data.success ? 'Saved!' : 'Error: ' + data.error);
+            alert(data.success ? 'Content saved!' : 'Error: ' + data.error);
           })
           .catch(e => alert('Save failed: ' + e.message));
+        }
+        
+        function saveCode() {
+          if (!editor) return;
+          const slug = location.pathname === '/' ? 'home' : location.pathname.slice(1);
+          
+          fetch('/api/save/' + slug, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: editor.getValue() })
+          })
+          .then(r => r.json())
+          .then(data => {
+            if (data.success) {
+              alert('Code saved! Reloading...');
+              location.reload();
+            } else {
+              alert('Error: ' + data.error);
+            }
+          })
+          .catch(e => alert('Save failed: ' + e.message));
+        }
+        
+        function toggleCodeEditor() {
+          const editorDiv = document.getElementById('monaco-editor');
+          const mainContent = document.querySelector('main');
+          
+          if (editorDiv.classList.contains('editor-hidden')) {
+            // Show editor
+            editorDiv.classList.remove('editor-hidden');
+            originalContent = mainContent.innerHTML;
+            
+            // Load Monaco Editor
+            if (!editor) {
+              require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' }});
+              require(['vs/editor/editor.main'], function () {
+                editor = monaco.editor.create(document.getElementById('monaco-container'), {
+                  value: originalContent,
+                  language: 'html',
+                  theme: 'vs-dark',
+                  automaticLayout: true,
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  wordWrap: 'on'
+                });
+              });
+            } else {
+              editor.setValue(originalContent);
+            }
+          } else {
+            // Hide editor
+            editorDiv.classList.add('editor-hidden');
+          }
+        }
+        
+        function closeEditor() {
+          document.getElementById('monaco-editor').classList.add('editor-hidden');
         }
       `;
 
@@ -273,43 +396,57 @@ export default {
           <html lang="en">
             <head>
               <meta charSet="UTF-8" />
-              <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
               <title>VibeFlare - Agent-Controlled CMS</title>
-              <style>{baseStyles}</style>
-              {isEditMode && (
-                <script>{editScript}</script>
+              <style dangerouslySetInnerHTML={{ __html: baseStyles }} />
+              <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+              {(isEditMode || isCodeMode) && (
+                <script dangerouslySetInnerHTML={{ __html: editScript }} />
               )}
             </head>
             <body>
-              {isEditMode && (
+              {(isEditMode || isCodeMode) && (
                 <div class="edit-bar">
-                  <button class="btn" onClick={() => { (window as any).saveContent(); }}>Save</button>
+                  <button class="btn" onClick="saveContent()">Save Content</button>
+                  <button class="btn btn-secondary" onClick="toggleCodeEditor()">Code Editor</button>
                   <span style="margin-left: 1rem;">Edit Mode</span>
                 </div>
               )}
+              
+              {(isEditMode || isCodeMode) && (
+                <div id="monaco-editor" class="editor-hidden">
+                  <div style="position: absolute; top: 10px; right: 10px; z-index: 1001;">
+                    <button class="btn" onClick="saveCode()" style="margin-right: 10px;">Save & Reload</button>
+                    <button class="btn btn-secondary" onClick="closeEditor()">Close</button>
+                  </div>
+                  <div id="monaco-container" style="width: 100%; height: 100%;"></div>
+                </div>
+              )}
+              
               <div class="container">
-                <main contentEditable={isEditMode}>
+                <main contentEditable={isEditMode && !isCodeMode}>
                   <h1>Welcome to VibeFlare</h1>
                   <p>
-                    This is an MCP-compatible CMS powered by Cloudflare Workers. 
+                    This is an MCP-first CMS powered by Cloudflare Workers and mono-jsx. 
                     Agents can control content, data, and assets through our API.
                   </p>
                   
                   <div class="mcp-info">
                     <h2>🤖 MCP Endpoints Available</h2>
-                    <pre>{`GET  /mcp/pages           → list all page slugs
-GET  /mcp/page/:slug      → get page content  
-POST /mcp/page/:slug      → create/update page
-GET  /mcp/data/:table     → query database table
-POST /mcp/data/:table     → insert/update data
-POST /mcp/upload/:key     → upload asset to R2
-GET  /mcp/upload/:key     → download asset`}</pre>
+                    <pre dangerouslySetInnerHTML={{ __html: `GET  /mcp                 → Get MCP instructions
+GET  /mcp/pages           → List all page slugs
+GET  /mcp/page/:slug      → Get page content  
+POST /mcp/page/:slug      → Create/update page
+GET  /mcp/data/:table     → Query database table
+POST /mcp/data/:table     → Insert/update data
+POST /mcp/upload/:key     → Upload asset to R2
+GET  /mcp/upload/:key     → Download asset` }} />
                   </div>
 
                   <div class="mcp-info">
-                    <h2>✏️ Quick Edit</h2>
-                    <p>Add <code>?edit</code> to any URL to enable inline editing.</p>
-                    <p>Try it: <a href="/?edit">Edit this page</a></p>
+                    <h2>✏️ Dual Edit Modes</h2>
+                    <p>Add <code>?edit</code> for content editing or <code>?code</code> for source editing.</p>
+                    <p>Try it: <a href="/?edit">Content Edit</a> | <a href="/?code">Code Edit</a></p>
                   </div>
 
                   <div class="mcp-info">
@@ -331,28 +468,41 @@ GET  /mcp/upload/:key     → download asset`}</pre>
             <html lang="en" status={404}>
               <head>
                 <meta charSet="UTF-8" />
-                <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                 <title>Page Not Found - {slug}</title>
-                <style>{baseStyles}</style>
-                {isEditMode && (
-                  <script>{editScript}</script>
+                <style dangerouslySetInnerHTML={{ __html: baseStyles }} />
+                <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+                {(isEditMode || isCodeMode) && (
+                  <script dangerouslySetInnerHTML={{ __html: editScript }} />
                 )}
               </head>
               <body>
-                {isEditMode && (
+                {(isEditMode || isCodeMode) && (
                   <div class="edit-bar">
-                    <button class="btn" onClick={() => { (window as any).saveContent(); }}>Save</button>
+                    <button class="btn" onClick="saveContent()">Save Content</button>
+                    <button class="btn btn-secondary" onClick="toggleCodeEditor()">Code Editor</button>
                     <span style="margin-left: 1rem;">Edit Mode</span>
                   </div>
                 )}
+                
+                {(isEditMode || isCodeMode) && (
+                  <div id="monaco-editor" class="editor-hidden">
+                    <div style="position: absolute; top: 10px; right: 10px; z-index: 1001;">
+                      <button class="btn" onClick="saveCode()" style="margin-right: 10px;">Save & Reload</button>
+                      <button class="btn btn-secondary" onClick="closeEditor()">Close</button>
+                    </div>
+                    <div id="monaco-container" style="width: 100%; height: 100%;"></div>
+                  </div>
+                )}
+                
                 <div class="container">
-                  <main contentEditable={isEditMode}>
+                  <main contentEditable={isEditMode && !isCodeMode}>
                     <h1>Page "{slug}" Not Found</h1>
                     <p>This page doesn't exist yet. You can create it using the MCP API:</p>
                     
-                    <pre>{`curl -X POST https://your-worker.workers.dev/mcp/page/${slug} \\
+                    <pre dangerouslySetInnerHTML={{ __html: `curl -X POST https://your-worker.workers.dev/mcp/page/${slug} \\
   -H "Content-Type: application/json" \\
-  -d '{"content": "<h1>New Page</h1><p>Content here</p>"}'`}</pre>
+  -d '{"content": "<h1>New Page</h1><p>Content here</p>"}'` }} />
                     
                     <p>Or <a href={`/${slug}?edit`}>start editing immediately</a></p>
                   </main>
@@ -367,24 +517,37 @@ GET  /mcp/upload/:key     → download asset`}</pre>
           <html lang="en">
             <head>
               <meta charSet="UTF-8" />
-              <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
               <title>{slug} - VibeFlare</title>
-              <style>{baseStyles}</style>
-              {isEditMode && (
-                <script>{editScript}</script>
+              <style dangerouslySetInnerHTML={{ __html: baseStyles }} />
+              <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+              {(isEditMode || isCodeMode) && (
+                <script dangerouslySetInnerHTML={{ __html: editScript }} />
               )}
             </head>
             <body>
-              {isEditMode && (
+              {(isEditMode || isCodeMode) && (
                 <div class="edit-bar">
-                  <button class="btn" onClick={() => { (window as any).saveContent(); }}>Save</button>
+                  <button class="btn" onClick="saveContent()">Save Content</button>
+                  <button class="btn btn-secondary" onClick="toggleCodeEditor()">Code Editor</button>
                   <span style="margin-left: 1rem;">Edit Mode</span>
                 </div>
               )}
+              
+              {(isEditMode || isCodeMode) && (
+                <div id="monaco-editor" class="editor-hidden">
+                  <div style="position: absolute; top: 10px; right: 10px; z-index: 1001;">
+                    <button class="btn" onClick="saveCode()" style="margin-right: 10px;">Save & Reload</button>
+                    <button class="btn btn-secondary" onClick="closeEditor()">Close</button>
+                  </div>
+                  <div id="monaco-container" style="width: 100%; height: 100%;"></div>
+                </div>
+              )}
+              
               <div class="container">
                 <main 
-                  contentEditable={isEditMode}
-                  innerHTML={pageContent}
+                  contentEditable={isEditMode && !isCodeMode}
+                  dangerouslySetInnerHTML={{ __html: pageContent }}
                 />
               </div>
             </body>
