@@ -42,7 +42,23 @@ Done! ✨
 npm install mono-jsx wrangler
 ```
 
-### 2. Set Up Cloudflare Resources
+### 2. **Development Mode (Local Storage)**
+
+For local development with automatic fallbacks:
+
+```bash
+# Use local storage for all services (recommended for development)
+npm run dev
+
+# This will create local files in .wrangler/state for:
+# - KV: Local key-value storage
+# - D1: Local SQLite database 
+# - R2: Local filesystem storage
+```
+
+### 3. **Production Setup (Cloudflare Resources)**
+
+Only needed when deploying to production:
 
 ```bash
 # Create KV namespace for pages
@@ -55,7 +71,7 @@ wrangler d1 create vibeflare
 wrangler r2 bucket create your-bucket-name
 ```
 
-### 3. Update wrangler.toml
+### 4. Update wrangler.toml
 
 Replace the placeholder IDs with your actual resource IDs:
 
@@ -73,13 +89,13 @@ r2_buckets = [
 ]
 ```
 
-### 4. Deploy
+### 5. Deploy
 
 ```bash
 wrangler publish
 ```
 
-### 5. Start Using
+### 6. Start Using
 
 Visit `https://your-worker.workers.dev/mcp` to see the MCP instructions, or add `?edit` to any page URL for inline editing!
 

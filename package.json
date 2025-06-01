@@ -5,17 +5,20 @@
   "main": "index.ts",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --env development",
+    "dev:remote": "wrangler dev",
+    "dev:miniflare": "miniflare --modules --script=index.tsx --kv=CONTENT --d1=DB --r2=BUCKET",
     "deploy": "wrangler publish",
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "mono-jsx": "^1.0.0"
+    "mono-jsx": "^0.6.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241022.0",
     "typescript": "^5.3.0",
-    "wrangler": "^3.0.0"
+    "wrangler": "^4.18.0",
+    "miniflare": "^3.20241022.0"
   },
   "keywords": [
     "mcp",
@@ -27,4 +30,4 @@
   ],
   "author": "VibeFlare",
   "license": "MIT"
-} 
+}

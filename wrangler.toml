@@ -1,11 +1,11 @@
 name = "vibeflare-mcp-cms"
-main = "index.ts"
+main = "index.tsx"
 compatibility_date = "2024-01-01"
 
 # Replace these placeholder IDs with your actual Cloudflare resource IDs
 # Run: wrangler kv:namespace create "CONTENT" to get KV ID
 # Run: wrangler d1 create vibeflare to get D1 ID  
-# Run: wrangler r2 bucket create your-bucket-name to get R2 bucket
+# Run: wrangler r2 bucket create vibeflare-bucket to get R2 bucket
 
 kv_namespaces = [
   { binding = "CONTENT", id = "REPLACE_ME_WITH_KV_ID" }
@@ -16,9 +16,28 @@ d1_databases = [
 ]
 
 r2_buckets = [
-  { binding = "BUCKET", bucket_name = "REPLACE_ME_WITH_BUCKET_NAME" }
+  { binding = "BUCKET", bucket_name = "vibeflare-bucket" }
 ]
 
 # TODO: Add Cloudflare Access authentication for production
 # [env.production.vars]
 # AUTH_DOMAIN = "your-team.cloudflareaccess.com" 
+
+# Local development configuration
+[env.development]
+kv_namespaces = [
+  { binding = "CONTENT", id = "local-kv-namespace" }
+]
+
+d1_databases = [
+  { binding = "DB", database_name = "vibeflare-local", database_id = "local-db-id" }
+]
+
+# For local R2, wrangler will use filesystem storage
+r2_buckets = [
+  { binding = "BUCKET", bucket_name = "vibeflare-local" }
+]
+
+# Optional: Local variables for development  
+[env.development.vars]
+ENVIRONMENT = "development" 
