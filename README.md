@@ -1,144 +1,261 @@
-# Vibe CMS — The Micro CMS for Agents and Vibe Coders
+# VibeFlare MCP Server 🚀
 
-Vibe Coding is awesome. But configuring a CMS for your non-technical users still sucks. With Vibe CMS, you don't need to. Your agent automatically creates an embeddable CMS that your users can edit directly.
+**Agent-controlled CMS powered by Cloudflare Workers and the Model Context Protocol (MCP)**
 
-Vibe CMS is an open-source, lightweight, component-based Micro CMS built specifically for usage by code generation AI Agents. It leverages TypeScript and TSX components, offering inline content-editing combined with structured meta-configurations, perfect for embedding in agent-driven environments and custom landing-page generator agents like Lovable, Bolt.new, Replit or [deco](https://getdeco.ai).
+VibeFlare is a Cloudflare-native CMS that exposes an MCP-compatible API, allowing AI agents to create, edit, and manage web content, data, and assets without human DevOps intervention.
 
-## Core Features
+## ✨ Features
 
-### Connect your agent to the Vibe MCP (Model Context Protocol) and start using instantly
+- **🤖 MCP-Compatible API** - Full Model Context Protocol support for agent interaction
+- **⚡ Cloudflare-Native** - Built on Workers, KV, D1, and R2 for global edge performance  
+- **✏️ Inline Editing** - Add `?edit` to any URL for instant WYSIWYG editing
+- **🎨 Theme System** - CSS variables and runtime theme swapping
+- **📦 Zero Build** - Deploy directly with TypeScript, no complex build pipeline
+- **🔗 SSR Ready** - Server-side rendering with `mono-jsx`
 
-Your agent can learn how to use Vibe CMS dynamically by interacting with our hosted MCP server at https://mcp.vibecms.ai. It will then immediately be able to create sites that leverages a component library, theming, and provide a familiar editing experience for your non-technical users.
+## 🚀 Quick Start
 
-### Agents write simple TypeScript + JSX Components
+### 1. Install Dependencies
 
-Built on TSX (TypeScript JSX), your agent creates a `components/` directory with Typed components, which are great for LLMs to use later on.
-
-// Example TSX Component with Typed Props:
-
-```tsx
-import { Component } from "vibecms";
-
-interface MyComponentProps {
-  title: string;
-  description: string;
-}
-
-export const MyComponent: Component = ({ title, description }) => {
-  return (
-    <div>
-      <h1>{title}</h1>
-      <p>{description}</p>
-    </div>
-  );
-};
+```bash
+npm install mono-jsx wrangler
+# or
+yarn add mono-jsx wrangler
 ```
 
-Each section of a webpage is a standalone TSX component with clearly defined props, promoting maintainability and rapid development. The type definitions automatically generate appropriate content editing interfaces, eliminating the need to manually configure content type editors.
+### 2. Set Up Cloudflare Resources
 
-#### Server-Side Rendering with Client-Side Interactivity
+Create the required Cloudflare resources:
 
-Components in Vibe CMS run on the server-side by default, ensuring fast loading times and excellent SEO. For interactive elements, Vibe CMS supports client-side islands of interactivity, similar to modern frameworks like Fresh.
+```bash
+# Create KV namespace
+wrangler kv:namespace create "CONTENT"
 
-### Enable inline content editing for your users anywhere
+# Create D1 database  
+wrangler d1 create vibeflare
 
-Inspired by Nash, Vibe CMS provides inline, content-editable HTML outputs that your users can modify directly.
+# Create R2 bucket
+wrangler r2 bucket create your-bucket-name
+```
 
-// TODO: Screenshot of embedded editor inside Lovable preview
+### 3. Configure wrangler.toml
 
-Seamless inline editing happens directly in the browser—no external tools or complex dashboards required.
+Update `wrangler.toml` with your actual resource IDs:
 
-Inline forms pop-up for advanced meta-configuration (e.g., layouts, data sources, dynamic properties), making it easy for non-technical users to customize their content.
+```toml
+name = "vibeflare-mcp-server"
+main = "index.ts"
+compatibility_date = "2024-01-01"
 
-#### From Code to Collaborative Content
+kv_namespaces = [
+  { binding = "CONTENT", id = "YOUR_ACTUAL_KV_ID" }
+]
 
-Dealing with "content type" editors is a headache. With Vibe CMS, you simply write React (JSX) components with TypeScript, and we automatically generate a no-code editor that matches your Props. This creates a perfect bridge between developers and content creators, allowing them to work together seamlessly in a unified environment.
+d1_databases = [
+  { binding = "DB", database_name = "vibeflare", database_id = "YOUR_ACTUAL_D1_ID" }
+]
 
-### Section Library & Theming
+r2_buckets = [
+  { binding = "BUCKET", bucket_name = "your-actual-bucket-name" }
+]
+```
 
-Create your own Rich library of customizable TSX sections ready for immediate use by agents and humans.
+### 4. Deploy
 
-Supports customizable themes built with Tailwind CSS, ensuring rapid styling and consistent branding.
+```bash
+wrangler publish
+```
 
-Enables agents like Lovable and Bolt.new to easily auto-generate landing pages that remain brand-consistent and easily editable across multiple pages.
+### 5. Start Creating
 
-#### Component Library Architecture
+Visit `https://your-worker.workers.dev/?edit` and start typing!
 
-The Section Library in Vibe CMS works similarly to Storybook, allowing developers to:
-- Configure component properties and instantly see the generated UI
-- Preview components in isolation before adding them to pages
-- Create composable components that can accept other sections as parameters
-- Build a cohesive design system that maintains brand consistency
+## 📡 MCP API Reference
 
-### Static & Dynamic Rendering with Cloudflare Workers
+VibeFlare exposes a complete MCP-compatible API for programmatic content management:
 
-Supports fully static pages (generated as HTML for instant performance).
+### Pages
 
-Dynamic sections handled individually by Cloudflare Workers, allowing serverless rendering per component.
+```bash
+# List all pages
+GET /mcp/pages
+# Response: {"pages": ["home", "about", "contact"]}
 
-Flexible hybrid approach for maximum performance, scalability, and customizability.
+# Get page content
+GET /mcp/page/:slug
+# Response: {"slug": "about", "content": "<h1>About</h1>..."}
 
-### Agent-first UI compatibility - create small components that can be used inside chat experiences
+# Create/update page
+POST /mcp/page/:slug
+Content-Type: application/json
+{"content": "<h1>New Page</h1><p>Content here</p>"}
+# Response: {"success": true, "slug": "about"}
+```
 
-Embeddable CMS designed specifically for AI agents' workflows and conversational UIs.
+### Data (D1 Database)
 
-### Embeddable & Easy-to-Use
+```bash
+# Query table data
+GET /mcp/data/:table
+# Response: {"results": [...], "success": true}
 
-Lightweight, purely browser-based solution, embedding directly into any HTML file or agent workflow.
+# Insert data
+POST /mcp/data/:table  
+Content-Type: application/json
+{"title": "Post Title", "content": "Post content", "author": "Agent"}
+# Response: {"success": true, "result": {...}}
+```
 
-Generates clean, production-ready static HTML, ensuring fast loading times and excellent SEO.
+### Assets (R2 Storage)
 
-Zero-installation editing—perfect for vibe coders, designers, marketers, and AI agents to quickly iterate and deploy.
+```bash
+# Upload file
+POST /mcp/upload/:key
+Content-Type: image/jpeg
+[binary data]
+# Response: {"success": true, "key": "photo.jpg"}
 
-### Open Source & Extensible
+# Download file
+GET /mcp/upload/:key
+# Response: [binary data with correct Content-Type]
+```
 
-Fully open-source project, welcoming community contributions, customization, and innovation.
+## 🎨 Theme System
 
-Easy-to-extend architecture, allowing the community and agent developers to build and share components and plugins.
+Colors and styling are controlled via `theme.json` and CSS variables:
 
-## Technical Stack
+```javascript
+// theme.json defines design tokens
+{
+  "colors": {
+    "primary": "#3b82f6",
+    "background": "#ffffff",
+    // ...
+  }
+}
 
-**Core Technologies:**
-- **TypeScript / TSX:** Provides type safety, developer productivity, and clarity
-- **HTMX & Deno:** Efficient server-side rendering with minimal client-side overhead
-- **Tailwind CSS & DaisyUI:** Immediate and highly customizable styling solutions
-- **Cloudflare Workers:** Edge-rendered dynamic components for low latency
+// Automatically converted to CSS variables:
+// --color-primary: #3b82f6
+// --color-background: #ffffff
+```
 
-**Development Experience:**
-- Local or web-based code editor with real-time content preview
-- Automatic TypeScript to Content Schema conversion
-- Git-based version control with easy rollback capabilities
-- AI-assisted code and content generation
+You can swap themes at runtime by updating the CSS variables.
 
-**Performance Optimizations:**
-- Server-side rendering for fast initial page loads
-- Minimal JavaScript footprint for better performance
-- Edge computing for dynamic content with low latency
-- Optimized asset delivery through CDN
+## ✏️ Edit Mode
 
-## Ideal Use-Cases
+Add `?edit` to any URL to enable inline editing:
 
-**AI-Driven Web Development:**
-- AI-generated, brand-consistent landing pages (e.g., Lovable-style agents)
-- Rapid prototyping and iteration with AI assistance
-- Embedding directly into agent chat flows for seamless, agent-driven site creation
+- `/?edit` - Edit homepage
+- `/about?edit` - Edit about page  
+- `/blog/post-1?edit` - Edit blog post
 
-**Content-Driven Sites:**
-- Simple, high-performance, editable content sites
-- Marketing landing pages with easy content management
-- Documentation sites with collaborative editing
+The editor provides:
+- **ContentEditable** regions with visual feedback
+- **Save button** in top-right corner
+- **Auto-save** to KV storage via `/api/save/:slug`
 
-**Collaborative Workflows:**
-- Bridge the gap between developers and content creators
-- Enable non-technical users to make content changes without developer intervention
-- Maintain brand consistency across multiple pages and sites
+## 🧠 Agent Integration Examples
 
-## Community & Learning
+### Using cURL
 
-- Join our [Discord community](https://deco.cx/discord)
-- Contribute to the [GitHub repository](https://github.com/deco-cx/vibecms)
+```bash
+# Create a new blog post
+curl -X POST https://your-worker.workers.dev/mcp/page/blog/hello-world \
+  -H "Content-Type: application/json" \
+  -d '{"content": "<h1>Hello World</h1><p>My first post!</p>"}'
 
-## Get Started Today
+# Add some data
+curl -X POST https://your-worker.workers.dev/mcp/data/posts \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Hello World", "slug": "hello-world", "published": true}'
 
-- Connect your agent to our [MCP Server](https://mcp.vibecms.ai)
-- [Quick Start Guide](https://docs.vibecms.ai/getting-started)
+# Upload an image
+curl -X POST https://your-worker.workers.dev/mcp/upload/hero.jpg \
+  -H "Content-Type: image/jpeg" \
+  --data-binary @hero.jpg
+```
+
+### Agent Prompt Examples
+
+```
+Create a landing page for a SaaS product with:
+- Hero section with CTA
+- Features grid
+- Pricing table
+- Contact form
+
+Use the VibeFlare MCP API to:
+1. POST /mcp/page/landing with the HTML content
+2. POST /mcp/data/signups to create the leads table
+3. Style with the existing theme variables
+```
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌──────────────┐    ┌─────────────┐
+│   AI Agent      │───▶│ MCP API      │───▶│ Cloudflare  │
+│   (Claude, etc) │    │ /mcp/*       │    │ Workers     │
+└─────────────────┘    └──────────────┘    └─────────────┘
+                                                   │
+                       ┌─────────────┐             │
+                       │ Edit Mode   │◀────────────┤
+                       │ ?edit       │             │
+                       └─────────────┘             │
+                                                   │
+                       ┌─────────────┐             │
+                       │ SSR Pages   │◀────────────┤  
+                       │ mono-jsx    │             │
+                       └─────────────┘             │
+                                                   ▼
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ KV Storage  │    │ D1 Database │    │ R2 Buckets  │
+│ (Pages)     │    │ (Data)      │    │ (Assets)    │
+└─────────────┘    └─────────────┘    └─────────────┘
+```
+
+## 🔒 Security Notes
+
+This implementation focuses on core functionality. For production use, consider adding:
+
+- **Authentication** - Cloudflare Access, API keys, or JWT tokens
+- **Rate limiting** - Cloudflare rate limiting rules
+- **Input validation** - Sanitize HTML content and SQL queries
+- **CORS configuration** - Restrict origins for browser requests
+
+```javascript
+// Example: Add auth middleware
+if (!request.headers.get('Authorization')) {
+  return new Response('Unauthorized', { status: 401 });
+}
+```
+
+## 🚧 Next Steps
+
+Ready to extend VibeFlare? Consider adding:
+
+- **React hydration** for interactive components
+- **Markdown support** with frontmatter parsing
+- **Image optimization** via Cloudflare Images
+- **Caching strategies** with KV TTL and Cache API
+- **Webhooks** for external integrations
+- **Multi-tenancy** with namespace isolation
+
+## 📖 Learning Resources
+
+- [Model Context Protocol Spec](https://spec.modelcontextprotocol.io/)
+- [Cloudflare Workers Docs](https://developers.cloudflare.com/workers/)
+- [mono-jsx Documentation](https://github.com/trueadm/mono-jsx)
+
+## 🤝 Contributing
+
+VibeFlare is designed to be extended by the community. Feel free to:
+
+- Add new MCP endpoints
+- Improve the theme system  
+- Enhance the editor experience
+- Build agent integrations
+
+---
+
+**Built with ❤️ for the agent-first web** 

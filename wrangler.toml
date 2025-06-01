@@ -1,0 +1,23 @@
+name = "vibeflare-mcp-server"
+main = "index.tsx"
+compatibility_date = "2024-01-15"
+compatibility_flags = ["nodejs_compat"]
+
+# Replace the IDs below with your actual Cloudflare resource IDs
+[env.production]
+kv_namespaces = [
+  { binding = "CONTENT", id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID" }
+]
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "vibeflare"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[env.production.r2_buckets]]
+binding = "BUCKET"
+bucket_name = "REPLACE_WITH_YOUR_R2_BUCKET_NAME"
+
+# Environment variables (optional)
+[vars]
+# ADMIN_SECRET = "your-secret-key" 

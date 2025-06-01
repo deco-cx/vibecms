@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "node16",
+    "lib": ["ES2022", "WebWorker"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "mono-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["@cloudflare/workers-types"],
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "outDir": "./dist",
+    "noEmit": true
+  },
+  "include": ["*.ts", "*.tsx"],
+  "exclude": ["node_modules", "dist"]
+} 
